@@ -66,7 +66,9 @@ export function useCamera() {
       
       // Use the test stream as the actual stream
       streamRef.current = testStream;
+      console.log('Calling setCameraStream with stream:', testStream.id);
       setCameraStream(testStream);
+      console.log('setCameraStream called');
       
       // The video attachment will happen in CameraView component
       console.log('Stream set to context, video element will attach in component');
@@ -158,8 +160,8 @@ export function useCamera() {
   }, [setCameraLoading, setCameraError, setCameraStream, setPermission]);
   
   const stopCamera = useCallback(() => {
+    console.log('Stopping camera');
     if (streamRef.current) {
-      console.log('Stopping camera');
       streamRef.current.getTracks().forEach(track => {
         track.stop();
       });
@@ -171,14 +173,23 @@ export function useCamera() {
     }
     
     setCameraStream(null);
-  }, [setCameraStream]);
+  }, []); // Remove setCameraStream from dependencies to avoid infinite loop
   
-  // Cleanup on unmount
+  // Cleanup on unmount - stop camera when component unmounts
   useEffect(() => {
     return () => {
-      stopCamera();
+      console.log('Cleanup: stopping camera on unmount');
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          track.stop();
+        });
+        streamRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     };
-  }, [stopCamera]);
+  }, []); // Empty deps - only run on mount/unmount
   
   // Don't auto-request permissions - wait for user interaction on mobile
   

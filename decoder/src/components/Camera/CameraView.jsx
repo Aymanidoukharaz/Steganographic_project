@@ -28,6 +28,16 @@ export function CameraView() {
   const lastStreamRef = useRef(null);
   const playAttemptedRef = useRef(false);
 
+  // Debug: Log component state
+  console.log('CameraView render:', { 
+    hasStream: !!stream, 
+    hasVideoRef: !!videoRef.current,
+    isLoading, 
+    hasPermission,
+    streamId: stream?.id,
+    isVideoReady 
+  });
+
   // Handle video element ready
   const handleVideoReady = () => {
     console.log('Video ready - dimensions:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
@@ -42,9 +52,18 @@ export function CameraView() {
 
   // Attach stream to video element when stream changes
   useEffect(() => {
+    console.log('Stream attachment effect running:', {
+      hasStream: !!stream,
+      hasVideoRef: !!videoRef.current,
+      streamChanged: stream !== lastStreamRef.current,
+      lastStreamId: lastStreamRef.current?.id,
+      currentStreamId: stream?.id
+    });
+    
     if (stream && videoRef.current && stream !== lastStreamRef.current) {
-      console.log('Attaching new stream to video element');
+      console.log('✓ Attaching new stream to video element');
       console.log('Stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+      console.log('Video element:', videoRef.current);
       
       // Reset state
       playAttemptedRef.current = false;
@@ -135,26 +154,20 @@ export function CameraView() {
     };
   }, [isVideoReady, stream]);
 
-  // Auto-start camera when permission granted or app resumes
-  useEffect(() => {
-    if (hasPermission === true && !stream && !isLoading) {
-      console.log('Auto-starting camera - permission granted');
-      startCamera();
-    }
-  }, [hasPermission, stream, isLoading, startCamera]);
-
   // Handle app visibility change (returning from background)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && hasPermission === true && !stream) {
         console.log('App resumed - restarting camera');
-        startCamera();
+        // Note: startCamera is called directly, not through state
+        startCamera().catch(err => console.error('Failed to restart camera:', err));
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [hasPermission, stream, startCamera]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only set up once - the closure will capture the latest values
 
   // Handle permission request and camera start
   const handleRequestPermission = async () => {

@@ -34,8 +34,11 @@ const initialState = {
 };
 
 function appReducer(state, action) {
+  console.log('AppContext reducer:', action.type, action.payload?.id || action.payload);
+  
   switch (action.type) {
     case 'SET_CAMERA_STREAM':
+      console.log('Setting camera stream in state:', action.payload?.id);
       return {
         ...state,
         cameraStream: action.payload,
