@@ -22,14 +22,17 @@ export function CameraView() {
   } = useApp();
   
   const [isVideoReady, setIsVideoReady] = useState(false);
+  const [videoError, setVideoError] = useState(null);
   const fpsCounterRef = useRef({ frames: 0, lastTime: 0 });
   const animationFrameRef = useRef();
   const lastStreamRef = useRef(null);
+  const playAttemptedRef = useRef(false);
 
   // Handle video element ready
   const handleVideoReady = () => {
+    console.log('Video ready - dimensions:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
     setIsVideoReady(true);
-    console.log('Camera video ready');
+    setVideoError(null);
     
     // Start simulated detection process
     if (detectionStatus === DETECTION_STATUS.IDLE) {
@@ -41,31 +44,65 @@ export function CameraView() {
   useEffect(() => {
     if (stream && videoRef.current && stream !== lastStreamRef.current) {
       console.log('Attaching new stream to video element');
+      console.log('Stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
+      
+      // Reset state
+      playAttemptedRef.current = false;
+      setIsVideoReady(false);
+      setVideoError(null);
+      
       videoRef.current.srcObject = stream;
       lastStreamRef.current = stream;
       
+      // Set video attributes for iOS Safari
+      videoRef.current.setAttribute('playsinline', 'true');
+      videoRef.current.setAttribute('autoplay', 'true');
+      videoRef.current.setAttribute('muted', 'true');
+      
       // Try to play the video
       const playVideo = async () => {
+        if (playAttemptedRef.current) {
+          console.log('Play already attempted, skipping');
+          return;
+        }
+        playAttemptedRef.current = true;
+        
         try {
-          await videoRef.current.play();
-          console.log('Video started playing successfully');
+          console.log('Attempting to play video...');
+          console.log('Video element state:', {
+            paused: videoRef.current.paused,
+            readyState: videoRef.current.readyState,
+            networkState: videoRef.current.networkState
+          });
+          
+          const playPromise = videoRef.current.play();
+          if (playPromise !== undefined) {
+            await playPromise;
+            console.log('Video started playing successfully');
+          }
         } catch (error) {
-          console.log('Video play failed, trying again in 100ms:', error);
+          console.error('Video play failed:', error.name, error.message);
+          setVideoError(`Erreur de lecture: ${error.message}`);
+          
           // Retry after a short delay
           setTimeout(async () => {
             try {
+              console.log('Retrying video play...');
               await videoRef.current.play();
               console.log('Video started playing on retry');
+              setVideoError(null);
             } catch (retryError) {
-              console.error('Video play failed on retry:', retryError);
+              console.error('Video play failed on retry:', retryError.name, retryError.message);
+              setVideoError(`Impossible de démarrer la vidéo: ${retryError.message}`);
             }
-          }, 100);
+          }, 500);
         }
       };
       
-      playVideo();
+      // Wait a bit for the stream to be fully attached
+      setTimeout(playVideo, 100);
     }
-  }, [stream]);
+  }, [stream, videoRef]);
 
   // FPS counter for camera feed
   const updateFPS = () => {
@@ -218,9 +255,18 @@ export function CameraView() {
         playsInline
         muted
         controls={false}
+        webkit-playsinline="true"
         className="w-full h-full object-cover"
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          transform: 'scaleX(1)', // Prevent mirror effect
+        }}
         onLoadedMetadata={(e) => {
           console.log('Video metadata loaded:', e.target.videoWidth, 'x', e.target.videoHeight);
+          console.log('Video readyState:', e.target.readyState);
           handleVideoReady();
         }}
         onCanPlay={() => {
@@ -228,13 +274,24 @@ export function CameraView() {
         }}
         onPlaying={() => {
           console.log('Video started playing');
+          setIsVideoReady(true);
         }}
         onError={(e) => {
           console.error('Video error:', e.target.error);
+          if (e.target.error) {
+            console.error('Video error code:', e.target.error.code);
+            console.error('Video error message:', e.target.error.message);
+          }
           setIsVideoReady(false);
         }}
         onLoadStart={() => {
           console.log('Video load started');
+        }}
+        onSuspend={() => {
+          console.log('Video suspended');
+        }}
+        onStalled={() => {
+          console.log('Video stalled');
         }}
       />
       
@@ -281,6 +338,9 @@ export function CameraView() {
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-white text-sm">Initialisation de la caméra...</p>
+            {videoError && (
+              <p className="text-red-400 text-xs mt-2 max-w-xs">{videoError}</p>
+            )}
           </div>
         </div>
       )}

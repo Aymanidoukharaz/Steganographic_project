@@ -57,23 +57,19 @@ export function useCamera() {
       }
       
       console.log('Camera permission granted');
-      console.log('Test stream tracks:', testStream.getTracks());
+      console.log('Test stream tracks:', testStream.getTracks().map(t => ({
+        kind: t.kind,
+        label: t.label,
+        enabled: t.enabled,
+        readyState: t.readyState
+      })));
       
       // Use the test stream as the actual stream
       streamRef.current = testStream;
       setCameraStream(testStream);
       
-      // Attach to video element immediately and start playback
-      if (videoRef.current) {
-        videoRef.current.srcObject = testStream;
-        console.log('Video element srcObject set:', videoRef.current.srcObject);
-        try {
-          await videoRef.current.play();
-          console.log('Video playback started successfully');
-        } catch (playError) {
-          console.log('Video autoplay blocked, will try on user interaction:', playError);
-        }
-      }
+      // The video attachment will happen in CameraView component
+      console.log('Stream set to context, video element will attach in component');
       
       setPermission(true);
       setCameraLoading(false);
@@ -120,18 +116,8 @@ export function useCamera() {
       setCameraStream(stream);
       setCameraLoading(false);
       
-      // Attach to video element if available and start playback
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-          console.log('Video playback started successfully');
-        } catch (playError) {
-          console.log('Video autoplay blocked, will try on user interaction:', playError);
-        }
-      }
-      
-      console.log('Camera started successfully');
+      // The video attachment will happen in CameraView component
+      console.log('Camera stream set to context');
       return stream;
       
     } catch (error) {
@@ -157,16 +143,7 @@ export function useCamera() {
           streamRef.current = fallbackStream;
           setCameraStream(fallbackStream);
           
-          if (videoRef.current) {
-            videoRef.current.srcObject = fallbackStream;
-            try {
-              await videoRef.current.play();
-              console.log('Fallback video playback started successfully');
-            } catch (playError) {
-              console.log('Fallback video autoplay blocked:', playError);
-            }
-          }
-          
+          console.log('Fallback camera stream set');
           return fallbackStream;
           
         } catch (fallbackError) {
