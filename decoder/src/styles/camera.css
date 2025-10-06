@@ -1,0 +1,229 @@
+/* Camera specific styles */
+
+.camera-viewport {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
+}
+
+.camera-video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+}
+
+/* Rear camera - no flip */
+.camera-video-element.environment {
+  transform: none;
+}
+
+/* Front camera - flip horizontally for better UX */
+.camera-video-element.user {
+  transform: scaleX(-1);
+}
+
+/* Loading overlay */
+.camera-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+/* Permission request overlay */
+.camera-permission-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 41, 59, 0.95);
+  padding: 2rem;
+}
+
+/* Error state overlay */
+.camera-error-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 2rem;
+}
+
+/* AR Canvas overlay */
+.ar-canvas-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: normal;
+}
+
+/* Detection guides */
+.detection-guide {
+  position: absolute;
+  inset: 2rem;
+  border: 2px dashed rgba(59, 130, 246, 0.5);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.detection-guide-text {
+  background: rgba(59, 130, 246, 0.1);
+  color: rgb(96, 165, 250);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  backdrop-filter: blur(4px);
+}
+
+/* Corner detection indicators */
+.corner-detection-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.corner-marker {
+  position: absolute;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid;
+}
+
+.corner-marker.detecting {
+  border-color: rgb(251, 191, 36);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.corner-marker.active {
+  border-color: rgb(16, 185, 129);
+}
+
+.corner-marker.top-left {
+  top: 1rem;
+  left: 1rem;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner-marker.top-right {
+  top: 1rem;
+  right: 1rem;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner-marker.bottom-left {
+  bottom: 1rem;
+  left: 1rem;
+  border-right: none;
+  border-top: none;
+}
+
+.corner-marker.bottom-right {
+  bottom: 1rem;
+  right: 1rem;
+  border-left: none;
+  border-top: none;
+}
+
+/* Screen detection outline */
+.detected-screen-outline {
+  position: absolute;
+  border: 3px solid rgb(16, 185, 129);
+  border-radius: 0.5rem;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2),
+              inset 0 0 0 1px rgba(16, 185, 129, 0.1);
+  pointer-events: none;
+}
+
+/* Subtitle area indicator */
+.subtitle-area-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4rem;
+  background: linear-gradient(
+    to top,
+    rgba(16, 185, 129, 0.2) 0%,
+    rgba(16, 185, 129, 0.1) 50%,
+    transparent 100%
+  );
+  border-top: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.subtitle-area-text {
+  color: rgb(16, 185, 129);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Performance optimizations */
+.camera-video-element,
+.ar-canvas-overlay {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Focus ring for accessibility */
+.camera-video-element:focus-visible {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .detection-guide {
+    inset: 1rem;
+  }
+  
+  .detection-guide-text {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .corner-marker {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-width: 2px;
+  }
+  
+  .corner-marker.top-left,
+  .corner-marker.top-right {
+    top: 0.75rem;
+  }
+  
+  .corner-marker.bottom-left,
+  .corner-marker.bottom-right {
+    bottom: 0.75rem;
+  }
+  
+  .corner-marker.top-left,
+  .corner-marker.bottom-left {
+    left: 0.75rem;
+  }
+  
+  .corner-marker.top-right,
+  .corner-marker.bottom-right {
+    right: 0.75rem;
+  }
+}

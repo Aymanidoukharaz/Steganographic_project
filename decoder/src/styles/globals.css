@@ -1,0 +1,173 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom CSS for camera and AR functionality */
+
+/* Ensure full viewport height on mobile */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Custom scrollbar for debug panels */
+.debug-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.debug-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.debug-panel::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 2px;
+}
+
+/* Smooth transitions for status changes */
+.status-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Custom pulse animation for detection */
+@keyframes pulse-detection {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-detection {
+  animation: pulse-detection 2s ease-in-out infinite;
+}
+
+/* AR overlay specific styles */
+.ar-overlay {
+  mix-blend-mode: normal;
+  pointer-events: none;
+}
+
+.ar-subtitle {
+  text-shadow: 
+    0 0 3px rgba(0, 0, 0, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.7);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Camera specific styles */
+.camera-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Mirror for better UX on front camera */
+}
+
+/* Use rear camera - don't mirror */
+.camera-video.rear-camera {
+  transform: none;
+}
+
+/* Corner detection indicators */
+.corner-indicator {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 3px solid;
+  opacity: 0.8;
+}
+
+.corner-indicator.top-left {
+  top: 16px;
+  left: 16px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner-indicator.top-right {
+  top: 16px;
+  right: 16px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner-indicator.bottom-left {
+  bottom: 16px;
+  left: 16px;
+  border-right: none;
+  border-top: none;
+}
+
+.corner-indicator.bottom-right {
+  bottom: 16px;
+  right: 16px;
+  border-left: none;
+  border-top: none;
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+  /* Hide status bar padding in standalone PWA mode */
+  .pwa-standalone .status-bar-padding {
+    display: none;
+  }
+  
+  /* Adjust header for standalone mode */
+  .pwa-standalone .app-header {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Fix iOS Safari viewport issues */
+  html {
+    height: -webkit-fill-available;
+  }
+  
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+  
+  #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Smooth camera feed rendering */
+.camera-video {
+  will-change: transform;
+}
+
+/* Backdrop blur fallback for older browsers */
+.backdrop-blur-fallback {
+  backdrop-filter: blur(12px);
+}
+
+@supports not (backdrop-filter: blur(12px)) {
+  .backdrop-blur-fallback {
+    background-color: rgba(15, 23, 42, 0.95);
+  }
+}
