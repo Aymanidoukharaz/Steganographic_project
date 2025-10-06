@@ -2,6 +2,28 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { CAMERA_CONSTRAINTS } from '../utils/constants';
 
+/**
+ * useCamera Hook
+ * Manages camera access, permissions, and stream lifecycle
+ * 
+ * Features:
+ * - Camera permission request and management
+ * - Rear camera prioritization (environment facing)
+ * - Stream lifecycle management
+ * - Error handling with French error messages
+ * - Cleanup on component unmount
+ * 
+ * @hook
+ * @returns {Object} Camera controls and state
+ * @returns {React.RefObject} videoRef - Reference to video element
+ * @returns {MediaStream|null} stream - Active camera stream
+ * @returns {boolean} isLoading - Loading state
+ * @returns {string|null} error - Error message (French)
+ * @returns {boolean|null} hasPermission - Permission status
+ * @returns {Function} requestPermission - Request camera access
+ * @returns {Function} startCamera - Start camera stream
+ * @returns {Function} stopCamera - Stop camera and cleanup
+ */
 export function useCamera() {
   const { 
     state: { cameraStream, cameraLoading, cameraError, hasPermission },
@@ -14,11 +36,15 @@ export function useCamera() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   
+  /**
+   * Request camera permission and initialize camera stream
+   * Attempts rear camera first, falls back to any available camera
+   * @returns {Promise<boolean>} True if permission granted
+   */
   const requestPermission = useCallback(async () => {
     try {
       setCameraLoading(true);
       setCameraError(null);
-      console.log('Requesting camera permission...');
       
       // Check if we're in a secure context (required for camera access)
       if (!window.isSecureContext) {
@@ -44,7 +70,6 @@ export function useCamera() {
       try {
         testStream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (error) {
-        console.log('Rear camera not available, trying any camera...');
         // Fallback to any available camera
         constraints = {
           video: { 
@@ -56,23 +81,9 @@ export function useCamera() {
         testStream = await navigator.mediaDevices.getUserMedia(constraints);
       }
       
-      console.log('Camera permission granted');
-      console.log('Test stream tracks:', testStream.getTracks().map(t => ({
-        kind: t.kind,
-        label: t.label,
-        enabled: t.enabled,
-        readyState: t.readyState
-      })));
-      
-      // Use the test stream as the actual stream
+      // Use the stream as the active camera stream
       streamRef.current = testStream;
-      console.log('Calling setCameraStream with stream:', testStream.id);
       setCameraStream(testStream);
-      console.log('setCameraStream called');
-      
-      // The video attachment will happen in CameraView component
-      console.log('Stream set to context, video element will attach in component');
-      
       setPermission(true);
       setCameraLoading(false);
       return true;
@@ -100,9 +111,12 @@ export function useCamera() {
     }
   }, [setCameraLoading, setCameraError, setPermission, setCameraStream]);
   
+  /**
+   * Start camera stream with specified constraints
+   * @returns {Promise<MediaStream>} Active camera stream
+   */
   const startCamera = useCallback(async () => {
     if (streamRef.current) {
-      console.log('Camera already started');
       return streamRef.current;
     }
     
@@ -110,16 +124,11 @@ export function useCamera() {
       setCameraLoading(true);
       setCameraError(null);
       
-      console.log('Starting camera with constraints:', CAMERA_CONSTRAINTS);
-      
       const stream = await navigator.mediaDevices.getUserMedia(CAMERA_CONSTRAINTS);
       
       streamRef.current = stream;
       setCameraStream(stream);
       setCameraLoading(false);
-      
-      // The video attachment will happen in CameraView component
-      console.log('Camera stream set to context');
       return stream;
       
     } catch (error) {
@@ -144,27 +153,26 @@ export function useCamera() {
           
           streamRef.current = fallbackStream;
           setCameraStream(fallbackStream);
-          
-          console.log('Fallback camera stream set');
           return fallbackStream;
           
         } catch (fallbackError) {
-          console.error('Fallback camera start failed:', fallbackError);
-          setCameraError('Impossible de démarrer la caméra avec des paramètres réduits.');
+          console.error('Fallback camera also failed:', fallbackError);
+          setCameraError('Impossible de démarrer la caméra avec les paramètres disponibles.');
+          throw fallbackError;
         }
       }
       
       setCameraError(errorMessage);
-      return null;
+      throw error;
     }
   }, [setCameraLoading, setCameraError, setCameraStream, setPermission]);
   
+  /**
+   * Stop camera stream and release resources
+   */
   const stopCamera = useCallback(() => {
-    console.log('Stopping camera');
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-      });
+      streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
     
@@ -173,16 +181,15 @@ export function useCamera() {
     }
     
     setCameraStream(null);
-  }, []); // Remove setCameraStream from dependencies to avoid infinite loop
+  }, []);
   
-  // Cleanup on unmount - stop camera when component unmounts
+  /**
+   * Cleanup camera stream on component unmount
+   */
   useEffect(() => {
     return () => {
-      console.log('Cleanup: stopping camera on unmount');
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => {
-          track.stop();
-        });
+        streamRef.current.getTracks().forEach(track => track.stop());
         streamRef.current = null;
       }
       if (videoRef.current) {

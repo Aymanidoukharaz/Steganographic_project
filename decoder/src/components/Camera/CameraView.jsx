@@ -4,6 +4,20 @@ import { useApp } from '../../contexts/AppContext';
 import { LoadingSpinner, ErrorMessage } from '../UI/LoadingSpinner';
 import { UI_TEXT, DETECTION_STATUS } from '../../utils/constants';
 
+/**
+ * CameraView Component
+ * Displays live camera feed with status indicators and detection visualization
+ * 
+ * Features:
+ * - Real-time camera feed display (60 FPS target)
+ * - iOS Safari autoplay compatibility
+ * - FPS monitoring and performance tracking
+ * - Detection status visualization
+ * - Error handling and retry logic
+ * 
+ * @component
+ * @returns {React.ReactElement} Camera view with overlays
+ */
 export function CameraView() {
   const { 
     videoRef, 
@@ -28,44 +42,28 @@ export function CameraView() {
   const lastStreamRef = useRef(null);
   const playAttemptedRef = useRef(false);
 
-  // Debug: Log component state
-  console.log('CameraView render:', { 
-    hasStream: !!stream, 
-    hasVideoRef: !!videoRef.current,
-    isLoading, 
-    hasPermission,
-    streamId: stream?.id,
-    isVideoReady 
-  });
-
+  /**
+   * Handle video element ready state
+   * Initializes detection status when camera feed is active
+   */
   // Handle video element ready
   const handleVideoReady = () => {
-    console.log('Video ready - dimensions:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
     setIsVideoReady(true);
     setVideoError(null);
     
-    // Start simulated detection process
+    // Start detection process
     if (detectionStatus === DETECTION_STATUS.IDLE) {
       setDetectionStatus(DETECTION_STATUS.SEARCHING);
     }
   };
 
-  // Attach stream to video element when stream changes
+  /**
+   * Attach camera stream to video element
+   * Handles iOS Safari autoplay requirements and stream lifecycle
+   */
   useEffect(() => {
-    console.log('Stream attachment effect running:', {
-      hasStream: !!stream,
-      hasVideoRef: !!videoRef.current,
-      streamChanged: stream !== lastStreamRef.current,
-      lastStreamId: lastStreamRef.current?.id,
-      currentStreamId: stream?.id
-    });
-    
     if (stream && videoRef.current && stream !== lastStreamRef.current) {
-      console.log('✓ Attaching new stream to video element');
-      console.log('Stream tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, readyState: t.readyState })));
-      console.log('Video element:', videoRef.current);
-      
-      // Reset state
+      // Reset state for new stream
       playAttemptedRef.current = false;
       setIsVideoReady(false);
       setVideoError(null);
@@ -73,52 +71,38 @@ export function CameraView() {
       videoRef.current.srcObject = stream;
       lastStreamRef.current = stream;
       
-      // Set video attributes for iOS Safari
+      // Set video attributes for iOS Safari compatibility
       videoRef.current.setAttribute('playsinline', 'true');
       videoRef.current.setAttribute('autoplay', 'true');
       videoRef.current.setAttribute('muted', 'true');
       
-      // Try to play the video
+      // Attempt to play video with retry logic
       const playVideo = async () => {
-        if (playAttemptedRef.current) {
-          console.log('Play already attempted, skipping');
-          return;
-        }
+        if (playAttemptedRef.current) return;
         playAttemptedRef.current = true;
         
         try {
-          console.log('Attempting to play video...');
-          console.log('Video element state:', {
-            paused: videoRef.current.paused,
-            readyState: videoRef.current.readyState,
-            networkState: videoRef.current.networkState
-          });
-          
           const playPromise = videoRef.current.play();
           if (playPromise !== undefined) {
             await playPromise;
-            console.log('Video started playing successfully');
           }
         } catch (error) {
-          console.error('Video play failed:', error.name, error.message);
+          console.error('Video play error:', error.name);
           setVideoError(`Erreur de lecture: ${error.message}`);
           
-          // Retry after a short delay
+          // Retry after brief delay
           setTimeout(async () => {
             try {
-              console.log('Retrying video play...');
               await videoRef.current.play();
-              console.log('Video started playing on retry');
               setVideoError(null);
             } catch (retryError) {
-              console.error('Video play failed on retry:', retryError.name, retryError.message);
+              console.error('Video play retry failed:', retryError.name);
               setVideoError(`Impossible de démarrer la vidéo: ${retryError.message}`);
             }
           }, 500);
         }
       };
       
-      // Wait a bit for the stream to be fully attached
       setTimeout(playVideo, 100);
     }
   }, [stream, videoRef]);
