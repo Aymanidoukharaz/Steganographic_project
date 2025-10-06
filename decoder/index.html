@@ -28,6 +28,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <title>Décodeur de Sous-titres AR</title>
+    
+    <!-- Global error handler to prevent crashes -->
+    <script>
+      // Prevent unhandled errors from crashing the app
+      window.addEventListener('error', function(event) {
+        console.error('[Global Error]', event.error);
+        event.preventDefault(); // Don't show browser error page
+      });
+      
+      window.addEventListener('unhandledrejection', function(event) {
+        console.error('[Unhandled Promise Rejection]', event.reason);
+        event.preventDefault(); // Don't show browser error page
+      });
+      
+      // Log app startup
+      console.log('[App] Starting AR Subtitles Decoder v3.1...');
+    </script>
   </head>
   <body class="bg-slate-900 text-slate-50 font-sans">
     <div id="root"></div>

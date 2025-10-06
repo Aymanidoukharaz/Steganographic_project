@@ -9,8 +9,9 @@ import { useOpenCV } from '../../hooks/useOpenCV';
 export function AppLayout() {
   const { state: { hasPermission } } = useApp();
   
-  // Initialize OpenCV on app load
-  useOpenCV();
+  // TEMPORARY: Disable auto OpenCV loading - it blocks the browser
+  // We'll load it manually in Phase 3.2 when needed
+  // useOpenCV();
   
   return (
     <OrientationGuard>

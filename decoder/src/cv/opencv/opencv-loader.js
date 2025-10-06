@@ -29,10 +29,11 @@ export async function loadOpenCV() {
   const startTime = performance.now();
   
   opencvLoadPromise = new Promise((resolve, reject) => {
-    // Timeout after 30 seconds
+    // Timeout after 15 seconds (reduced from 30 for faster failure)
     const timeout = setTimeout(() => {
-      reject(new Error('OpenCV.js load timeout (30s exceeded)'));
-    }, 30000);
+      console.warn('[OpenCV] ⚠️ Load timeout (15s) - App will continue without CV features');
+      reject(new Error('OpenCV.js load timeout (15s exceeded)'));
+    }, 15000);
     
     try {
       // Create script element for OpenCV.js

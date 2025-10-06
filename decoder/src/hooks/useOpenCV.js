@@ -20,23 +20,23 @@ import { loadOpenCV, isOpenCVLoaded, getOpenCV, getOpenCVVersion } from '../cv/o
  */
 export function useOpenCV() {
   const { state, setOpenCVLoading, setOpenCVLoaded, setOpenCVError } = useApp();
-  const loadAttempted = useRef(false);
+  
+  console.log('[useOpenCV] Hook called, opencvLoaded:', state.opencvLoaded, 'opencvLoading:', state.opencvLoading);
   
   useEffect(() => {
-    // Only attempt to load once
-    if (loadAttempted.current) {
-      return;
-    }
+    console.log('[useOpenCV] useEffect running, opencvLoaded:', state.opencvLoaded, 'opencvLoading:', state.opencvLoading);
     
-    // Skip if already loaded or loading
+    // Skip if already loaded or currently loading
     if (state.opencvLoaded || state.opencvLoading) {
+      console.log('[useOpenCV] Already loaded or loading, skipping');
       return;
     }
     
-    loadAttempted.current = true;
+    console.log('[useOpenCV] ✅ Conditions met! Setting up 2-second delay timer...');
     
-    async function initOpenCV() {
-      console.log('[useOpenCV] Initiating OpenCV load...');
+    // Delay OpenCV loading to prevent blocking initial render
+    const loadTimer = setTimeout(async () => {
+      console.log('[useOpenCV] ⏰ Timer fired! Initiating delayed OpenCV load (2s delay to prevent blocking)...');
       setOpenCVLoading(true);
       
       try {
@@ -48,11 +48,15 @@ export function useOpenCV() {
         
       } catch (error) {
         console.error('[useOpenCV] ❌ Failed to load OpenCV:', error);
+        console.warn('[useOpenCV] App will continue without CV features');
         setOpenCVError(error.message);
       }
-    }
+    }, 2000); // Wait 2 seconds after component mount
     
-    initOpenCV();
+    return () => {
+      console.log('[useOpenCV] Cleanup - clearing timer');
+      clearTimeout(loadTimer);
+    };
   }, [state.opencvLoaded, state.opencvLoading, setOpenCVLoading, setOpenCVLoaded, setOpenCVError]);
   
   return {
