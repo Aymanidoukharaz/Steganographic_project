@@ -81,10 +81,11 @@ export default defineConfig({
   server: {
     host: true,
     port: 3001,
-    https: true,  // Enable HTTPS for mobile camera access
-    headers: {
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-      'Cross-Origin-Opener-Policy': 'same-origin',
-    }
+    https: true  // Enable HTTPS for mobile camera access
+  },
+  preview: {
+    host: true,
+    port: 3001,
+    https: true
   }
 })
