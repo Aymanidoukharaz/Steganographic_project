@@ -4,9 +4,13 @@ import { InstallPrompt } from '../UI/InstallPrompt';
 import { CameraView } from '../Camera/CameraView';
 import { MinimalControls } from '../UI/MinimalControls';
 import { useApp } from '../../contexts/AppContext';
+import { useOpenCV } from '../../hooks/useOpenCV';
 
 export function AppLayout() {
   const { state: { hasPermission } } = useApp();
+  
+  // Initialize OpenCV on app load
+  useOpenCV();
   
   return (
     <OrientationGuard>

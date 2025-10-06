@@ -20,6 +20,12 @@ const initialState = {
   cameraLoading: false,
   hasPermission: getInitialPermissionState(),
   
+  // OpenCV state
+  opencvLoaded: false,
+  opencvLoading: false,
+  opencvError: null,
+  opencvVersion: null,
+  
   // Detection state
   detectionStatus: DETECTION_STATUS.IDLE,
   detectionConfidence: 0,
@@ -78,6 +84,29 @@ function appReducer(state, action) {
         hasPermission: action.payload
       };
       
+    case 'SET_OPENCV_LOADING':
+      return {
+        ...state,
+        opencvLoading: action.payload
+      };
+      
+    case 'SET_OPENCV_LOADED':
+      return {
+        ...state,
+        opencvLoaded: true,
+        opencvLoading: false,
+        opencvError: null,
+        opencvVersion: action.payload
+      };
+      
+    case 'SET_OPENCV_ERROR':
+      return {
+        ...state,
+        opencvLoaded: false,
+        opencvLoading: false,
+        opencvError: action.payload
+      };
+      
     case 'SET_DETECTION_STATUS':
       return {
         ...state,
@@ -130,6 +159,9 @@ export function AppProvider({ children }) {
     setCameraLoading: (loading) => dispatch({ type: 'SET_CAMERA_LOADING', payload: loading }),
     setCameraError: (error) => dispatch({ type: 'SET_CAMERA_ERROR', payload: error }),
     setPermission: (permission) => dispatch({ type: 'SET_PERMISSION', payload: permission }),
+    setOpenCVLoading: (loading) => dispatch({ type: 'SET_OPENCV_LOADING', payload: loading }),
+    setOpenCVLoaded: (version) => dispatch({ type: 'SET_OPENCV_LOADED', payload: version }),
+    setOpenCVError: (error) => dispatch({ type: 'SET_OPENCV_ERROR', payload: error }),
     setDetectionStatus: (status) => dispatch({ type: 'SET_DETECTION_STATUS', payload: status }),
     setDetectionConfidence: (confidence) => dispatch({ type: 'SET_DETECTION_CONFIDENCE', payload: confidence }),
     setProcessingFPS: (fps) => dispatch({ type: 'SET_PROCESSING_FPS', payload: fps }),
