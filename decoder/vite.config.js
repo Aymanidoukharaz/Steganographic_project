@@ -13,10 +13,11 @@ export default defineConfig({
         enabled: true,  // Enable PWA in development
         type: 'module'
       },
+      manifestFilename: 'manifest.webmanifest',
       manifest: {
-        name: 'Décodeur de Sous-titres AR',
+        name: 'Decodeur de Sous-titres AR',
         short_name: 'AR Subtitles',
-        description: 'Décodeur de sous-titres en réalité augmentée',
+        description: 'Decodeur de sous-titres en realite augmentee',
         theme_color: '#2563EB',
         background_color: '#0F172A',
         display: 'standalone',
