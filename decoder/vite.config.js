@@ -15,6 +15,7 @@ export default defineConfig({
       },
       manifestFilename: 'manifest.webmanifest',
       manifest: {
+        id: '/',
         name: 'Decodeur de Sous-titres AR',
         short_name: 'AR Subtitles',
         description: 'Decodeur de sous-titres en realite augmentee',
@@ -23,7 +24,7 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'landscape-primary',
         scope: '/',
-        start_url: '/',
+        start_url: '/?source=pwa',
         lang: 'fr',
         categories: ['education', 'utilities'],
         icons: [
