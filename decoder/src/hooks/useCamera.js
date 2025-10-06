@@ -96,7 +96,7 @@ export function useCamera() {
       setCameraError(errorMessage);
       return false;
     }
-  }, [setCameraLoading, setCameraError, setPermission]);
+  }, [setCameraLoading, setCameraError, setPermission, setCameraStream]);
   
   const startCamera = useCallback(async () => {
     if (streamRef.current) {

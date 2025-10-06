@@ -158,20 +158,25 @@ export function CameraView() {
 
   // Handle permission request and camera start
   const handleRequestPermission = async () => {
-    console.log('Permission button clicked - User Agent:', navigator.userAgent);
+    console.log('=== PERMISSION BUTTON CLICKED ===');
+    console.log('User Agent:', navigator.userAgent);
     console.log('Is HTTPS?', window.location.protocol === 'https:');
     console.log('MediaDevices available?', !!navigator.mediaDevices);
+    console.log('getUserMedia available?', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
     
     try {
-      // Request permission and immediately start camera
+      // Request permission - this will trigger the browser permission dialog
+      console.log('Calling requestPermission()...');
       const granted = await requestPermission();
+      console.log('requestPermission() result:', granted);
+      
       if (granted) {
-        console.log('Permission granted, starting camera...');
-        const stream = await startCamera();
-        console.log('Camera stream:', stream);
+        console.log('Permission granted successfully!');
+      } else {
+        console.log('Permission was not granted');
       }
     } catch (error) {
-      console.error('Failed to start camera:', error);
+      console.error('Error in handleRequestPermission:', error);
     }
   };
 
