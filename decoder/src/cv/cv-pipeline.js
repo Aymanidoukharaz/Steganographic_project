@@ -32,15 +32,20 @@ class CVPipeline {
    */
   async initialize() {
     if (this.isInitialized) {
+      console.log('[CV Pipeline] Already initialized');
       return { success: true, message: 'Already initialized' };
     }
 
     try {
       console.log('[CV Pipeline] Initializing...');
+      console.log('[CV Pipeline] About to call loadOpenCV()...');
       
       // Load OpenCV.js
-      this.cv = await loadOpenCV();
+      const cvInstance = await loadOpenCV();
+      console.log('[CV Pipeline] loadOpenCV() RESOLVED! Got instance:', !!cvInstance);
+      console.log('[CV Pipeline] cvInstance has Mat:', !!cvInstance.Mat);
       
+      this.cv = cvInstance;
       this.isInitialized = true;
       console.log('[CV Pipeline] ✅ Initialization complete');
       
@@ -49,7 +54,8 @@ class CVPipeline {
         message: 'CV Pipeline initialized successfully'
       };
     } catch (error) {
-      console.error('[CV Pipeline] Initialization failed:', error);
+      console.error('[CV Pipeline] ❌ Initialization failed:', error);
+      console.error('[CV Pipeline] Error stack:', error.stack);
       return {
         success: false,
         message: 'Failed to initialize: ' + error.message
