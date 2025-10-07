@@ -36,6 +36,30 @@ export async function loadOpenCV() {
       return;
     }
 
+    const MAX_WAIT_TIME = 30000; // 30 seconds timeout
+    const POLL_INTERVAL = 100; // Check every 100ms
+    let timeoutId = null;
+    let pollIntervalId = null;
+
+    /**
+     * Check if OpenCV is ready by polling
+     * More reliable on iOS Safari than onRuntimeInitialized callback
+     */
+    const checkOpenCVReady = () => {
+      if (window.cv && window.cv.Mat) {
+        const loadTime = (performance.now() - loadStartTime).toFixed(2);
+        console.log(`[OpenCV Loader] ✅ OpenCV.js ready via polling (${loadTime}ms)`);
+        
+        clearTimeout(timeoutId);
+        clearInterval(pollIntervalId);
+        
+        opencvInstance = window.cv;
+        resolve(window.cv);
+        return true;
+      }
+      return false;
+    };
+
     // Create script element
     const script = document.createElement('script');
     script.src = OPENCV_URL;
@@ -43,29 +67,49 @@ export async function loadOpenCV() {
 
     // Setup onload handler
     script.onload = () => {
-      console.log('[OpenCV Loader] Script loaded, waiting for cv.onRuntimeInitialized...');
+      console.log('[OpenCV Loader] Script loaded, initializing OpenCV...');
       
-      // Wait for OpenCV runtime to initialize
-      if (window.cv && window.cv.onRuntimeInitialized) {
+      // Try callback method first (works on some browsers)
+      if (window.cv && typeof window.cv.onRuntimeInitialized !== 'undefined') {
         window.cv.onRuntimeInitialized = () => {
           const loadTime = (performance.now() - loadStartTime).toFixed(2);
-          console.log(`[OpenCV Loader] ✅ OpenCV.js ready (${loadTime}ms)`);
+          console.log(`[OpenCV Loader] ✅ OpenCV.js ready via callback (${loadTime}ms)`);
+          
+          clearTimeout(timeoutId);
+          clearInterval(pollIntervalId);
+          
           opencvInstance = window.cv;
           resolve(window.cv);
         };
-      } else {
-        reject(new Error('OpenCV.js loaded but cv.onRuntimeInitialized not found'));
       }
+
+      // Start polling as backup (essential for iOS Safari)
+      pollIntervalId = setInterval(() => {
+        if (checkOpenCVReady()) {
+          clearInterval(pollIntervalId);
+        }
+      }, POLL_INTERVAL);
+
+      // Timeout if loading takes too long
+      timeoutId = setTimeout(() => {
+        clearInterval(pollIntervalId);
+        console.error('[OpenCV Loader] ❌ Timeout waiting for OpenCV.js initialization');
+        loadingPromise = null;
+        reject(new Error(`OpenCV.js initialization timeout after ${MAX_WAIT_TIME}ms`));
+      }, MAX_WAIT_TIME);
     };
 
     // Setup error handler
     script.onerror = (error) => {
-      console.error('[OpenCV Loader] ❌ Failed to load OpenCV.js', error);
+      console.error('[OpenCV Loader] ❌ Failed to load OpenCV.js script', error);
+      clearTimeout(timeoutId);
+      clearInterval(pollIntervalId);
       loadingPromise = null;
       reject(new Error('Failed to load OpenCV.js from CDN'));
     };
 
     // Add script to document
+    console.log('[OpenCV Loader] Adding script to document...');
     document.head.appendChild(script);
   });
 

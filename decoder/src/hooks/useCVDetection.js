@@ -46,16 +46,18 @@ export function useCVDetection(videoRef) {
       
       if (result.success) {
         setCVInitialized(true);
+        setCVLoading(false);
         setDetectionStatus(DETECTION_STATUS.SEARCHING);
         console.log('[useCVDetection] ✅ CV pipeline ready');
       } else {
         console.error('[useCVDetection] Initialization failed:', result.message);
+        setCVLoading(false);
         setDetectionStatus(DETECTION_STATUS.ERROR);
       }
     } catch (error) {
       console.error('[useCVDetection] Initialization error:', error);
-      setDetectionStatus(DETECTION_STATUS.ERROR);
       setCVLoading(false);
+      setDetectionStatus(DETECTION_STATUS.ERROR);
     }
   }, [state.cvInitialized, setCVInitialized, setCVLoading, setDetectionStatus]);
 
