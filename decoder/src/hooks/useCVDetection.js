@@ -34,28 +34,66 @@ export function useCVDetection(videoRef) {
    */
   const initializeCV = useCallback(async () => {
     if (state.cvInitialized) {
+      console.log('[useCVDetection] Already initialized, skipping');
       return;
     }
 
-    console.log('[useCVDetection] Initializing CV pipeline...');
+    console.log('[useCVDetection] ========== INITIALIZATION START ==========');
+    console.log('[useCVDetection] Setting loading state...');
+    
     setCVLoading(true);
     setDetectionStatus(DETECTION_STATUS.LOADING);
 
+    // EMERGENCY TIMEOUT: If initialization takes > 20 seconds, abort
+    const timeoutId = setTimeout(() => {
+      console.error('[useCVDetection] ❌❌❌ TIMEOUT! Initialization took > 20 seconds');
+      setCVLoading(false);
+      setDetectionStatus(DETECTION_STATUS.ERROR);
+    }, 20000);
+
     try {
+      console.log('[useCVDetection] Calling initializeCVPipeline()...');
       const result = await initializeCVPipeline();
       
+      clearTimeout(timeoutId); // Cancel timeout if successful
+      
+      console.log('[useCVDetection] initializeCVPipeline() returned:', result);
+      
       if (result.success) {
-        setCVInitialized(true);
-        setCVLoading(false);
-        setDetectionStatus(DETECTION_STATUS.SEARCHING);
-        console.log('[useCVDetection] ✅ CV pipeline ready');
+        console.log('[useCVDetection] SUCCESS! Setting cvInitialized to true...');
+        
+        // Split state updates to isolate issue
+        try {
+          setCVInitialized(true);
+          console.log('[useCVDetection] ✅ setCVInitialized(true) executed');
+        } catch (err) {
+          console.error('[useCVDetection] ❌ setCVInitialized FAILED:', err);
+        }
+        
+        try {
+          setCVLoading(false);
+          console.log('[useCVDetection] ✅ setCVLoading(false) executed');
+        } catch (err) {
+          console.error('[useCVDetection] ❌ setCVLoading FAILED:', err);
+        }
+        
+        try {
+          setDetectionStatus(DETECTION_STATUS.SEARCHING);
+          console.log('[useCVDetection] ✅ setDetectionStatus(SEARCHING) executed');
+        } catch (err) {
+          console.error('[useCVDetection] ❌ setDetectionStatus FAILED:', err);
+        }
+        
+        console.log('[useCVDetection] ========== INITIALIZATION COMPLETE ==========');
       } else {
-        console.error('[useCVDetection] Initialization failed:', result.message);
+        console.error('[useCVDetection] ❌ Initialization failed:', result.message);
         setCVLoading(false);
         setDetectionStatus(DETECTION_STATUS.ERROR);
       }
     } catch (error) {
-      console.error('[useCVDetection] Initialization error:', error);
+      clearTimeout(timeoutId);
+      console.error('[useCVDetection] ❌ EXCEPTION during initialization:', error);
+      console.error('[useCVDetection] Error stack:', error.stack);
       setCVLoading(false);
       setDetectionStatus(DETECTION_STATUS.ERROR);
     }
