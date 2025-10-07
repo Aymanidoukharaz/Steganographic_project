@@ -24,9 +24,12 @@ export const UI_TEXT = {
 
 export const DETECTION_STATUS = {
   IDLE: 'idle',
+  LOADING: 'loading',
   SEARCHING: 'searching',
   DETECTING: 'detecting', 
-  ACTIVE: 'active'
+  DETECTED: 'detected',
+  ACTIVE: 'active',
+  ERROR: 'error'
 };
 
 export const CAMERA_CONSTRAINTS = {

@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCamera } from '../../hooks/useCamera';
 import { useApp } from '../../contexts/AppContext';
+import { useCVDetection } from '../../hooks/useCVDetection';
 import { LoadingSpinner, ErrorMessage } from '../UI/LoadingSpinner';
+import DetectionOverlay from '../UI/DetectionOverlay';
 import { UI_TEXT, DETECTION_STATUS } from '../../utils/constants';
 
 /**
@@ -30,10 +32,13 @@ export function CameraView() {
   } = useCamera();
   
   const { 
-    state: { detectionStatus },
+    state: { detectionStatus, cvInitialized, cvLoading },
     setDetectionStatus,
     setProcessingFPS
   } = useApp();
+  
+  // Initialize CV detection with video ref
+  const cvDetection = useCVDetection(videoRef);
   
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [videoError, setVideoError] = useState(null);
@@ -297,39 +302,15 @@ export function CameraView() {
         }}
       />
       
-      {/* AR Overlay Canvas - Prepared for Phase 3 */}
-      <canvas
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ mixBlendMode: 'normal' }}
-      />
+      {/* Phase 3: Detection Overlay Component */}
+      <DetectionOverlay />
       
-      {/* Corner Detection Indicators - Minimal Phase 3 Preview */}
-      {detectionStatus === DETECTION_STATUS.DETECTING && (
-        <div className="absolute inset-0 pointer-events-none">
-          {[
-            { position: 'top-8 left-8', border: 'border-l-2 border-t-2' },
-            { position: 'top-8 right-8', border: 'border-r-2 border-t-2' },
-            { position: 'bottom-8 left-8', border: 'border-l-2 border-b-2' },
-            { position: 'bottom-8 right-8', border: 'border-r-2 border-b-2' }
-          ].map((corner, i) => (
-            <div 
-              key={i}
-              className={`absolute ${corner.position} w-6 h-6 ${corner.border} border-white animate-pulse`}
-            />
-          ))}
-        </div>
-      )}
-      
-      {/* Active Detection - Detected Screen */}
-      {detectionStatus === DETECTION_STATUS.ACTIVE && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-12 border-2 border-green-500 rounded-xl shadow-lg shadow-green-500/25">
-            {/* AR Subtitle Zone */}
-            <div className="absolute bottom-0 left-0 right-0 h-20 bg-green-500/10 border-t border-green-500/50 rounded-b-xl flex items-center justify-center">
-              <span className="text-green-400 text-sm font-medium bg-black/50 px-3 py-1 rounded-full backdrop-blur">
-                Zone AR Subtitles
-              </span>
-            </div>
+      {/* Loading Overlay for CV Initialization */}
+      {cvLoading && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30">
+          <div className="bg-black/80 backdrop-blur px-4 py-2 rounded-full text-white text-sm flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            Chargement d'OpenCV...
           </div>
         </div>
       )}
