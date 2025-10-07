@@ -4,9 +4,14 @@ import { InstallPrompt } from '../UI/InstallPrompt';
 import { CameraView } from '../Camera/CameraView';
 import { MinimalControls } from '../UI/MinimalControls';
 import { useApp } from '../../contexts/AppContext';
+import { useOpenCV } from '../../hooks/useOpenCV';
 
 export function AppLayout() {
   const { state: { hasPermission } } = useApp();
+  
+  // TEMPORARY: Disable auto OpenCV loading - it blocks the browser
+  // We'll load it manually in Phase 3.2 when needed
+  // useOpenCV();
   
   return (
     <OrientationGuard>
