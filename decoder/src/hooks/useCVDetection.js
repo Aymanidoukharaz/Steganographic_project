@@ -195,15 +195,23 @@ export function useCVDetection(videoRef) {
   /**
    * Auto-start detection when CV is initialized
    * Use ref to track if detection has been started
+   * TEMPORARILY DISABLED for debugging UI freeze
    */
   const detectionStartedRef = useRef(false);
   
   useEffect(() => {
+    // EMERGENCY FIX: Disable auto-start to diagnose freeze
+    console.log('[useCVDetection] Auto-start DISABLED for debugging');
+    console.log('[useCVDetection] CV initialized:', state.cvInitialized);
+    console.log('[useCVDetection] Camera stream:', !!state.cameraStream);
+    
+    /* TEMPORARILY COMMENTED OUT
     if (state.cvInitialized && state.cameraStream && !detectionStartedRef.current) {
       console.log('[useCVDetection] Auto-starting detection...');
       detectionStartedRef.current = true;
       startDetection();
     }
+    */
 
     return () => {
       if (detectionStartedRef.current) {
