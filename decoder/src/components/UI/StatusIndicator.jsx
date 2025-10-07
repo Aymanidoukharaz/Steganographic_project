@@ -1,27 +1,28 @@
 import React from 'react';
 import { useApp } from '../../contexts/AppContext';
-import { UI_TEXT, DETECTION_STATUS } from '../../utils/constants';
+import { FRENCH_TEXT, DETECTION_STATUS } from '../../utils/constants';
 
+/**
+ * StatusIndicator Component
+ * Floating pill design with backdrop blur showing detection status
+ */
 export function StatusIndicator() {
-  const { state: { detectionStatus, detectionConfidence, processingFPS, opencvLoading, opencvLoaded, opencvError, opencvVersion } } = useApp();
+  const { state: { detectionStatus, detectionConfidence, processingFPS, cvLoading, cvInitialized } } = useApp();
   
-  // If OpenCV is loading or failed, show that status instead (but don't block UI)
-  if (opencvLoading) {
+  // If OpenCV is loading, show loading status
+  if (cvLoading) {
     return (
-      <div className="fixed top-4 left-4 right-4 z-40 pointer-events-none">
-        <div className="bg-blue-900/50 backdrop-blur-md rounded-lg px-4 py-3 border border-blue-600/50 shadow-lg animate-pulse-slow pointer-events-none">
+      <div className="fixed top-safe-top left-1/2 transform -translate-x-1/2 z-40 pointer-events-none mt-4">
+        <div className="bg-surface/90 backdrop-blur-md rounded-full px-6 py-3 border border-primary/30 shadow-lg shadow-primary/20 animate-pulse-slow">
           <div className="flex items-center space-x-3">
-            <div className="text-blue-400">
+            <div className="text-primary">
               <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-blue-400 text-sm font-medium">
+              <p className="text-primary text-sm font-medium whitespace-nowrap">
                 Chargement d'OpenCV...
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Initialisation du système de vision
               </p>
             </div>
           </div>
@@ -30,22 +31,20 @@ export function StatusIndicator() {
     );
   }
   
-  if (opencvError) {
+  // If detection status is ERROR, show warning
+  if (detectionStatus === DETECTION_STATUS.ERROR) {
     return (
-      <div className="fixed top-4 left-4 right-4 z-40 pointer-events-none">
-        <div className="bg-amber-900/50 backdrop-blur-md rounded-lg px-4 py-3 border border-amber-600/50 shadow-lg pointer-events-none">
+      <div className="fixed top-safe-top left-1/2 transform -translate-x-1/2 z-40 pointer-events-none mt-4">
+        <div className="bg-surface/90 backdrop-blur-md rounded-full px-6 py-3 border border-error/30 shadow-lg shadow-error/20">
           <div className="flex items-center space-x-3">
-            <div className="text-amber-400">
+            <div className="text-error">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div className="flex-1">
-              <p className="text-amber-400 text-sm font-medium">
-                OpenCV en arrière-plan
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                Continuer sans détection automatique
+              <p className="text-error text-sm font-medium whitespace-nowrap">
+                Erreur de détection
               </p>
             </div>
           </div>
@@ -58,45 +57,79 @@ export function StatusIndicator() {
     switch (detectionStatus) {
       case DETECTION_STATUS.IDLE:
         return {
-          text: UI_TEXT.status.idle,
-          color: 'text-slate-400',
-          bgColor: 'bg-slate-700',
-          icon: 'search'
+          text: FRENCH_TEXT.status.idle,
+          color: 'text-text-secondary',
+          bgColor: 'bg-surface/90',
+          borderColor: 'border-surface-light',
+          shadowColor: 'shadow-surface/20',
+          icon: 'search',
+          animate: false
         };
       case DETECTION_STATUS.SEARCHING:
         return {
-          text: UI_TEXT.status.searching,
-          color: 'text-blue-400',
-          bgColor: 'bg-blue-900/50',
+          text: FRENCH_TEXT.status.searching,
+          color: 'text-primary',
+          bgColor: 'bg-surface/90',
+          borderColor: 'border-primary/30',
+          shadowColor: 'shadow-primary/20',
           icon: 'search',
           animate: true
         };
       case DETECTION_STATUS.DETECTING:
         return {
-          text: UI_TEXT.status.detecting,
-          color: 'text-amber-400',
-          bgColor: 'bg-amber-900/50',
-          icon: 'target'
+          text: FRENCH_TEXT.status.analyzing,
+          color: 'text-warning',
+          bgColor: 'bg-surface/90',
+          borderColor: 'border-warning/30',
+          shadowColor: 'shadow-warning/20',
+          icon: 'target',
+          animate: true
+        };
+      case DETECTION_STATUS.DETECTED:
+        return {
+          text: FRENCH_TEXT.status.detected,
+          color: 'text-secondary',
+          bgColor: 'bg-surface/90',
+          borderColor: 'border-secondary/30',
+          shadowColor: 'shadow-secondary/20',
+          icon: 'check',
+          animate: false
         };
       case DETECTION_STATUS.ACTIVE:
         return {
-          text: UI_TEXT.status.active,
-          color: 'text-emerald-400',
-          bgColor: 'bg-emerald-900/50',
-          icon: 'check'
+          text: FRENCH_TEXT.status.decoding,
+          color: 'text-secondary',
+          bgColor: 'bg-surface/90',
+          borderColor: 'border-secondary/30',
+          shadowColor: 'shadow-secondary/20',
+          icon: 'play',
+          animate: false
+        };
+      case DETECTION_STATUS.ERROR:
+        return {
+          text: FRENCH_TEXT.status.error,
+          color: 'text-error',
+          bgColor: 'bg-surface/90',
+          borderColor: 'border-error/30',
+          shadowColor: 'shadow-error/20',
+          icon: 'error',
+          animate: false
         };
       default:
         return {
-          text: UI_TEXT.status.idle,
-          color: 'text-slate-400',
-          bgColor: 'bg-slate-700',
-          icon: 'search'
+          text: FRENCH_TEXT.status.idle,
+          color: 'text-text-secondary',
+          bgColor: 'bg-surface/90',
+          borderColor: 'border-surface-light',
+          shadowColor: 'shadow-surface/20',
+          icon: 'search',
+          animate: false
         };
     }
   };
 
-  const renderIcon = (iconType) => {
-    const baseClasses = "w-5 h-5";
+  const renderIcon = (iconType, animate) => {
+    const baseClasses = `w-5 h-5 ${animate ? 'animate-pulse-detection' : ''}`;
     
     switch (iconType) {
       case 'search':
@@ -117,6 +150,19 @@ export function StatusIndicator() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         );
+      case 'play':
+        return (
+          <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      case 'error':
+        return (
+          <svg className={baseClasses} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
       default:
         return null;
     }
@@ -125,34 +171,41 @@ export function StatusIndicator() {
   const config = getStatusConfig();
 
   return (
-    <div className="fixed top-4 left-4 right-4 z-50">
-      <div className={`
-        ${config.bgColor} backdrop-blur-md rounded-lg px-4 py-3 
-        border border-slate-600/50 shadow-lg
-        ${config.animate ? 'animate-pulse-slow' : ''}
-      `}>
+    <div className="fixed top-safe-top left-1/2 transform -translate-x-1/2 z-40 pointer-events-none mt-4 px-4">
+      <div 
+        className={`${config.bgColor} backdrop-blur-md rounded-full px-6 py-3 border ${config.borderColor} shadow-lg ${config.shadowColor} ${config.animate ? 'animate-pulse-slow' : ''}`}
+        role="status"
+        aria-live="polite"
+      >
         <div className="flex items-center space-x-3">
           <div className={config.color}>
-            {renderIcon(config.icon)}
+            {renderIcon(config.icon, config.animate)}
           </div>
-          
-          <div className="flex-1">
-            <p className={`${config.color} text-sm font-medium`}>
+          <div className="flex-1 min-w-0">
+            <p className={`${config.color} text-sm font-medium whitespace-nowrap`}>
               {config.text}
             </p>
-            
-            {detectionStatus === DETECTION_STATUS.ACTIVE && detectionConfidence > 0 && (
-              <p className="text-xs text-slate-400 mt-1">
-                Confiance: {Math.round(detectionConfidence * 100)}%
-              </p>
-            )}
           </div>
           
-          {processingFPS > 0 && (
-            <div className="text-right">
-              <p className="text-xs text-slate-400">
-                {Math.round(processingFPS)} FPS
-              </p>
+          {/* Show confidence and FPS when actively detecting */}
+          {(detectionStatus === DETECTION_STATUS.DETECTED || detectionStatus === DETECTION_STATUS.ACTIVE) && (
+            <div className="flex items-center space-x-2 text-xs text-text-muted ml-2">
+              {detectionConfidence > 0 && (
+                <span className="flex items-center">
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  {Math.round(detectionConfidence * 100)}%
+                </span>
+              )}
+              {processingFPS > 0 && (
+                <span className="flex items-center">
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {Math.round(processingFPS)} FPS
+                </span>
+              )}
             </div>
           )}
         </div>

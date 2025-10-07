@@ -5,7 +5,7 @@ import { UI_TEXT, DETECTION_STATUS } from '../../utils/constants';
 
 export function CameraControls() {
   const { 
-    state: { detectionStatus, showDebugInfo, hasPermission, cameraLoading, opencvLoaded, opencvVersion },
+    state: { detectionStatus, showDebugInfo, hasPermission, cameraLoading, cvInitialized },
     setDetectionStatus,
     toggleDebugInfo
   } = useApp();
@@ -130,7 +130,7 @@ export function CameraControls() {
               <div>Secure Context: {window.isSecureContext ? 'Oui' : 'Non'}</div>
               <div>Protocol: {window.location.protocol}</div>
               <div>PWA: {window.matchMedia('(display-mode: standalone)').matches ? 'Installée' : 'Non installée'}</div>
-              <div className="col-span-2">OpenCV: {opencvLoaded ? `✅ ${opencvVersion}` : '⏳ Chargement...'}</div>
+              <div className="col-span-2">OpenCV: {cvInitialized ? '✅ Prêt' : '⏳ Chargement...'}</div>
             </div>
             <div className="text-center text-slate-500 text-xs mt-2">
               ⚠️ Mode simulation - Computer Vision en Phase 3
