@@ -144,8 +144,12 @@ export function useCVDetection(videoRef) {
   /**
    * Main processing loop
    */
-  const processingLoop = useCallback(() => {
-    processFrame();
+  const processingLoop = useCallback(async () => {
+    // Process frame (async operation)
+    await processFrame();
+    
+    // Schedule next frame AFTER current processing completes
+    // This prevents overwhelming the browser with parallel operations
     animationFrameRef.current = requestAnimationFrame(processingLoop);
   }, [processFrame]);
 
@@ -190,16 +194,24 @@ export function useCVDetection(videoRef) {
 
   /**
    * Auto-start detection when CV is initialized
+   * Use ref to track if detection has been started
    */
+  const detectionStartedRef = useRef(false);
+  
   useEffect(() => {
-    if (state.cvInitialized && state.cameraStream) {
+    if (state.cvInitialized && state.cameraStream && !detectionStartedRef.current) {
+      console.log('[useCVDetection] Auto-starting detection...');
+      detectionStartedRef.current = true;
       startDetection();
     }
 
     return () => {
-      stopDetection();
+      if (detectionStartedRef.current) {
+        detectionStartedRef.current = false;
+        stopDetection();
+      }
     };
-  }, [state.cvInitialized, state.cameraStream, startDetection, stopDetection]);
+  }, [state.cvInitialized, state.cameraStream]); // Removed startDetection/stopDetection from deps
 
   /**
    * Cleanup on unmount
