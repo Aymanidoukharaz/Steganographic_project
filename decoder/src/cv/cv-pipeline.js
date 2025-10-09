@@ -40,6 +40,19 @@ class CVPipeline {
       console.log('[CV Pipeline] Initializing...');
       console.log('[CV Pipeline] About to call loadOpenCV()...');
       
+      // EMERGENCY WORKAROUND: Check if OpenCV is already globally loaded
+      if (window.cv && window.cv.Mat) {
+        console.log('[CV Pipeline] WORKAROUND: Found OpenCV globally loaded, using it directly');
+        this.cv = window.cv;
+        this.isInitialized = true;
+        console.log('[CV Pipeline] ✅ Initialization complete (via global)');
+        
+        return {
+          success: true,
+          message: 'CV Pipeline initialized successfully (global fallback)'
+        };
+      }
+      
       // Load OpenCV.js
       const cvInstance = await loadOpenCV();
       console.log('[CV Pipeline] loadOpenCV() RESOLVED! Got instance:', !!cvInstance);
