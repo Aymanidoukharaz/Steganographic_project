@@ -2,52 +2,131 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* Custom CSS for camera and AR functionality */
+/* AR Subtitles Decoder - Global Styles */
+/* Design System: Dark Theme with Blue/Green Accents */
 
-/* Ensure full viewport height on mobile */
+/* ==========================================================================
+   Base Styles & Reset
+   ========================================================================== */
+
+/* Ensure full viewport height on mobile with safe areas */
 html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background-color: #0F172A; /* --background */
+  color: #F8FAFC; /* --text-primary */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Custom scrollbar for debug panels */
+/* iOS safe area support */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ==========================================================================
+   Custom Scrollbars
+   ========================================================================== */
+
+/* Styled scrollbar for panels and modals */
+.custom-scrollbar::-webkit-scrollbar,
 .debug-panel::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
+  height: 6px;
 }
 
+.custom-scrollbar::-webkit-scrollbar-track,
 .debug-panel::-webkit-scrollbar-track {
   background: transparent;
 }
 
+.custom-scrollbar::-webkit-scrollbar-thumb,
 .debug-panel::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
-  border-radius: 2px;
+  background: rgba(148, 163, 184, 0.3); /* --text-secondary with opacity */
+  border-radius: 3px;
 }
 
-/* Smooth transitions for status changes */
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.debug-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* ==========================================================================
+   Slider Custom Styling
+   ========================================================================== */
+
+/* Custom range input (slider) styling */
+input[type="range"].slider-thumb::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563EB; /* --primary */
+  cursor: pointer;
+  border: 2px solid #F8FAFC; /* --text-primary */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 150ms ease;
+}
+
+input[type="range"].slider-thumb::-webkit-slider-thumb:hover {
+  background: #1D4ED8; /* --primary-dark */
+  transform: scale(1.1);
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563EB;
+  cursor: pointer;
+  border: 2px solid #F8FAFC;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 150ms ease;
+}
+
+input[type="range"].slider-thumb::-moz-range-thumb:hover {
+  background: #1D4ED8;
+  transform: scale(1.1);
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+/* Smooth transitions for status/state changes */
 .status-transition {
   transition: all 0.3s ease-in-out;
 }
 
-/* Custom pulse animation for detection */
-@keyframes pulse-detection {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.7;
-    transform: scale(1.05);
+/* Backdrop blur utility (for browsers that don't support Tailwind's backdrop-blur) */
+.backdrop-blur-fallback {
+  background-color: rgba(30, 41, 59, 0.9); /* --surface with opacity */
+}
+
+@supports (backdrop-filter: blur(12px)) {
+  .backdrop-blur-fallback {
+    background-color: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
   }
 }
 
+/* ==========================================================================
+   Animation Overrides (if Tailwind animations need customization)
+   ========================================================================== */
+
+/* Ensure pulse-detection uses the correct timing from Tailwind config */
 .animate-pulse-detection {
-  animation: pulse-detection 2s ease-in-out infinite;
+  animation: pulseDetection 1s ease-in-out infinite;
 }
 
-/* AR overlay specific styles */
+/* ==========================================================================
+   AR Overlay Specific Styles
+   ========================================================================== */
 .ar-overlay {
   mix-blend-mode: normal;
   pointer-events: none;
