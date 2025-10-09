@@ -21,14 +21,14 @@ export async function loadOpenCV() {
   // Return existing instance if already loaded
   if (opencvInstance) {
     console.log('[OpenCV Loader] Returning cached instance immediately');
-    return opencvInstance;
+    return Promise.resolve(opencvInstance); // Ensure we return a promise
   }
   
   // Check if OpenCV is already globally available (edge case)
   if (window.cv && window.cv.Mat) {
     console.log('[OpenCV Loader] OpenCV found globally, caching and returning');
     opencvInstance = window.cv;
-    return opencvInstance;
+    return Promise.resolve(opencvInstance); // Ensure we return a promise
   }
 
   // Return existing loading promise if already loading
@@ -38,7 +38,7 @@ export async function loadOpenCV() {
   }
 
   loadStartTime = performance.now();
-  console.log('[OpenCV Loader] Starting OpenCV.js load...');
+  console.log('[OpenCV Loader] Starting NEW Promise for OpenCV.js load...');
 
   loadingPromise = new Promise((resolve, reject) => {
     // Check if OpenCV is already available globally
@@ -68,13 +68,18 @@ export async function loadOpenCV() {
         clearInterval(pollIntervalId);
         
         opencvInstance = window.cv;
+        loadingPromise = null; // CRITICAL: Clear to prevent caching resolved promise
         
-        try {
-          resolve(window.cv);
-          console.log(`[OpenCV Loader] ✓ Promise resolved successfully`);
-        } catch (err) {
-          console.error(`[OpenCV Loader] ✗ Error resolving promise:`, err);
-        }
+        // Use setTimeout to ensure resolution happens in next tick
+        setTimeout(() => {
+          try {
+            console.log(`[OpenCV Loader] Calling resolve(window.cv)...`);
+            resolve(window.cv);
+            console.log(`[OpenCV Loader] ✓ Promise resolved successfully`);
+          } catch (err) {
+            console.error(`[OpenCV Loader] ✗ Error resolving promise:`, err);
+          }
+        }, 0);
         
         return true;
       }
