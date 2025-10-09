@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useCamera } from '../../hooks/useCamera';
 import { useApp } from '../../contexts/AppContext';
-import { useCVDetection } from '../../hooks/useCVDetection';
+import { useCVDetection } from '../../hooks/useCVDetection-sync'; // SYNC VERSION
 import { LoadingSpinner, ErrorMessage } from '../UI/LoadingSpinner';
 import DetectionOverlay from '../UI/DetectionOverlay';
 import { UI_TEXT, DETECTION_STATUS } from '../../utils/constants';
