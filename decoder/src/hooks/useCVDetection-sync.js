@@ -3,7 +3,7 @@
  * Redesigned to work around iOS Safari async/await issues
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { DETECTION_STATUS } from '../utils/constants';
 import { 
@@ -21,30 +21,29 @@ export function useCVDetection(videoRef) {
     setCVLoading
   } = useApp();
 
-  const pollingIntervalRef = useRef(null);
-  const initializationStartedRef = useRef(false);
-
   /**
    * Start OpenCV loading and polling
    */
   useEffect(() => {
+    // Skip if no camera
     if (!state.cameraStream) {
       console.log('[useCVDetection Sync] No camera stream, waiting...');
       return;
     }
 
+    // Skip if already initialized successfully
     if (state.cvInitialized) {
-      console.log('[useCVDetection Sync] Already initialized');
+      console.log('[useCVDetection Sync] Already initialized successfully');
       return;
     }
 
-    if (initializationStartedRef.current) {
-      console.log('[useCVDetection Sync] Initialization already started');
+    // Skip if already loading
+    if (state.cvLoading) {
+      console.log('[useCVDetection Sync] Already loading...');
       return;
     }
 
     console.log('[useCVDetection Sync] ========== STARTING INITIALIZATION ==========');
-    initializationStartedRef.current = true;
     
     // Start loading OpenCV (non-blocking)
     setCVLoading(true);
@@ -53,7 +52,7 @@ export function useCVDetection(videoRef) {
 
     // Start polling to check if ready
     let checkCount = 0;
-    pollingIntervalRef.current = setInterval(() => {
+    const pollingInterval = setInterval(() => {
       checkCount++;
       console.log(`[useCVDetection Sync] Polling check #${checkCount}...`);
       
@@ -62,7 +61,7 @@ export function useCVDetection(videoRef) {
 
       if (status === 'error') {
         console.error('[useCVDetection Sync] ❌ OpenCV loading failed');
-        clearInterval(pollingIntervalRef.current);
+        clearInterval(pollingInterval);
         setCVLoading(false);
         setDetectionStatus(DETECTION_STATUS.ERROR);
         return;
@@ -76,7 +75,7 @@ export function useCVDetection(videoRef) {
           console.log('[useCVDetection Sync] ✅ Got valid OpenCV instance');
           console.log('[useCVDetection Sync] Setting cvInitialized = true...');
           
-          clearInterval(pollingIntervalRef.current);
+          clearInterval(pollingInterval);
           setCVInitialized(true);
           setCVLoading(false);
           setDetectionStatus(DETECTION_STATUS.SEARCHING);
@@ -84,7 +83,7 @@ export function useCVDetection(videoRef) {
           console.log('[useCVDetection Sync] ========== INITIALIZATION COMPLETE ==========');
         } else {
           console.error('[useCVDetection Sync] ❌ OpenCV instance invalid');
-          clearInterval(pollingIntervalRef.current);
+          clearInterval(pollingInterval);
           setCVLoading(false);
           setDetectionStatus(DETECTION_STATUS.ERROR);
         }
@@ -93,11 +92,10 @@ export function useCVDetection(videoRef) {
 
     // Cleanup
     return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
+      console.log('[useCVDetection Sync] Cleaning up polling interval');
+      clearInterval(pollingInterval);
     };
-  }, [state.cameraStream, state.cvInitialized, setCVInitialized, setCVLoading, setDetectionStatus]);
+  }, [state.cameraStream, state.cvInitialized, state.cvLoading]); // Remove functions from deps
 
   return {
     isInitialized: state.cvInitialized,
