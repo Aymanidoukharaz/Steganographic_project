@@ -37,12 +37,6 @@ export function useCVDetection(videoRef) {
       return;
     }
 
-    // Skip if already loading
-    if (state.cvLoading) {
-      console.log('[useCVDetection Sync] Already loading...');
-      return;
-    }
-
     console.log('[useCVDetection Sync] ========== STARTING INITIALIZATION ==========');
     
     // Start loading OpenCV (non-blocking)
@@ -95,7 +89,7 @@ export function useCVDetection(videoRef) {
       console.log('[useCVDetection Sync] Cleaning up polling interval');
       clearInterval(pollingInterval);
     };
-  }, [state.cameraStream, state.cvInitialized, state.cvLoading]); // Remove functions from deps
+  }, [state.cameraStream, state.cvInitialized]); // FIXED: Removed state.cvLoading from dependencies
 
   return {
     isInitialized: state.cvInitialized,
