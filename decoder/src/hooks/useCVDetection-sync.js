@@ -103,6 +103,7 @@ export function useCVDetection(videoRef) {
   useEffect(() => {
     // Only start detection if OpenCV is initialized and we have video
     if (!state.cvInitialized || !videoRef.current) {
+      console.log('[useCVDetection Sync] Waiting for init... cvInit:', state.cvInitialized, 'video:', !!videoRef.current);
       return;
     }
     
@@ -112,62 +113,80 @@ export function useCVDetection(videoRef) {
     const pipeline = getCVPipeline();
     
     let isLoopActive = false;
+    let isPipelineReady = false;
     
     // Initialize pipeline FIRST, then start detection
-    pipeline.initialize().then(result => {
-      if (result.success) {
-        console.log('[useCVDetection Sync] ✅ CV Pipeline initialized, starting frame processing...');
-        isLoopActive = true;
+    console.log('[useCVDetection Sync] Calling pipeline.initialize()...');
+    pipeline.initialize()
+      .then(result => {
+        console.log('[useCVDetection Sync] Initialize result:', result);
         
-        // Detection loop - runs at ~15 FPS
-        let frameCount = 0;
-        const runDetection = async () => {
-          if (!videoRef.current || !isLoopActive) {
-            return;
-          }
+        if (result.success) {
+          console.log('[useCVDetection Sync] ✅ CV Pipeline initialized, starting frame processing...');
+          isLoopActive = true;
+          isPipelineReady = true;
           
-          frameCount++;
+          // Detection loop - runs at ~15 FPS
+          let frameCount = 0;
+          const runDetection = async () => {
+            if (!videoRef.current || !isLoopActive || !isPipelineReady) {
+              return;
+            }
+            
+            frameCount++;
+            
+            try {
+              // Process frame
+              const result = await pipeline.processFrame(videoRef.current);
+              
+              // Log every 30 frames (~2 seconds at 15 FPS)
+              if (frameCount % 30 === 0) {
+                console.log(`[useCVDetection Sync] Frame ${frameCount}: ${result.detected ? 'DETECTED ✅' : 'searching...'}`);
+              }
+              
+              // Update state if corners detected
+              if (result.detected) {
+                console.log('[useCVDetection Sync] 🎯 CORNERS DETECTED!', result);
+                setCornerPositions(result.corners);
+                setHomography(result.homography);
+                setDetectionConfidence(result.confidence);
+                setDetectionStatus(DETECTION_STATUS.DETECTING);
+              } else if (result.error && !result.skipped && !result.busy) {
+                // Only log real errors, not skip/busy states
+                if (frameCount % 100 === 0) {
+                  console.error('[useCVDetection Sync] Detection error:', result.error);
+                }
+              }
+            } catch (error) {
+              console.error('[useCVDetection Sync] Frame processing exception:', error);
+            }
           
-          // Process frame
-          const result = await pipeline.processFrame(videoRef.current);
+            // Schedule next frame
+            if (isLoopActive && isPipelineReady) {
+              detectionLoopRef.current = requestAnimationFrame(runDetection);
+            }
+          };
           
-          // Log every 30 frames (~2 seconds at 15 FPS)
-          if (frameCount % 30 === 0) {
-            console.log(`[useCVDetection Sync] Frame ${frameCount}: ${result.detected ? 'DETECTED ✅' : 'searching...'}`);
-          }
+          // Start the loop AFTER pipeline is initialized
+          console.log('[useCVDetection Sync] 🚀 Launching detection loop now!');
+          detectionLoopRef.current = requestAnimationFrame(runDetection);
           
-          // Update state if corners detected
-          if (result.detected) {
-            console.log('[useCVDetection Sync] 🎯 CORNERS DETECTED!', result);
-            setCornerPositions(result.corners);
-            setHomography(result.homography);
-            setDetectionConfidence(result.confidence);
-            setDetectionStatus(DETECTION_STATUS.DETECTING);
-          } else if (result.error && frameCount % 100 === 0) {
-            // Only log errors every 100 frames to avoid spam
-            console.error('[useCVDetection Sync] Detection error:', result.error);
-          }
-          
-          // Schedule next frame
-          if (isLoopActive) {
-            detectionLoopRef.current = requestAnimationFrame(runDetection);
-          }
-        };
-        
-        // Start the loop AFTER pipeline is initialized
-        detectionLoopRef.current = requestAnimationFrame(runDetection);
-        
-      } else {
-        console.error('[useCVDetection Sync] ❌ CV Pipeline init failed:', result.message);
-      }
-    });
+        } else {
+          console.error('[useCVDetection Sync] ❌ CV Pipeline init failed:', result.message);
+        }
+      })
+      .catch(error => {
+        console.error('[useCVDetection Sync] ❌ Pipeline init exception:', error);
+      });
     
     // Cleanup
     return () => {
       console.log('[useCVDetection Sync] 🛑 Stopping detection loop');
       isLoopActive = false;
+      isPipelineReady = false;
       if (detectionLoopRef.current) {
         cancelAnimationFrame(detectionLoopRef.current);
+        detectionLoopRef.current = null;
       }
     };
   }, [state.cvInitialized, videoRef]);
