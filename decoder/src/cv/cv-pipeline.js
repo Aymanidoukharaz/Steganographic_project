@@ -3,7 +3,7 @@
  * Orchestrates corner detection, homography calculation, and frame processing
  */
 
-import { loadOpenCV, getOpenCV, isOpenCVLoaded, cleanupMats } from './opencv-loader.js';
+import { getOpenCVInstance, isOpenCVReady } from './opencv-loader-sync.js';
 import { detectCornerMarkers, cornersToPoints } from './detection/corner-detector.js';
 import { validateMarkers, calculateQualityScore } from './detection/marker-validator.js';
 import { calculateHomography, isReasonablePerspective } from './detection/homography-calculator.js';
@@ -12,6 +12,21 @@ import {
   globalPerformanceMonitor, 
   globalCPUMonitor 
 } from './utils/performance-monitor.js';
+
+/**
+ * Helper function to cleanup OpenCV Mats
+ */
+function cleanupMats(...mats) {
+  mats.forEach(mat => {
+    if (mat && mat.delete) {
+      try {
+        mat.delete();
+      } catch (e) {
+        console.warn('[CV Pipeline] Error deleting mat:', e);
+      }
+    }
+  });
+}
 
 /**
  * CV Pipeline State
@@ -38,26 +53,28 @@ class CVPipeline {
 
     try {
       console.log('[CV Pipeline] Initializing...');
-      console.log('[CV Pipeline] About to call loadOpenCV()...');
       
-      // EMERGENCY WORKAROUND: Check if OpenCV is already globally loaded
-      if (window.cv && window.cv.Mat) {
-        console.log('[CV Pipeline] WORKAROUND: Found OpenCV globally loaded, using it directly');
-        this.cv = window.cv;
-        this.isInitialized = true;
-        console.log('[CV Pipeline] ✅ Initialization complete (via global)');
-        
+      // Check if OpenCV is ready (loaded by opencv-loader-sync)
+      if (!isOpenCVReady()) {
+        console.error('[CV Pipeline] OpenCV not ready yet!');
         return {
-          success: true,
-          message: 'CV Pipeline initialized successfully (global fallback)'
+          success: false,
+          message: 'OpenCV not loaded - initialize OpenCV first'
         };
       }
       
-      // Load OpenCV.js
-      const cvInstance = await loadOpenCV();
-      console.log('[CV Pipeline] loadOpenCV() RESOLVED! Got instance:', !!cvInstance);
-      console.log('[CV Pipeline] cvInstance has Mat:', !!cvInstance.Mat);
+      // Get the OpenCV instance
+      const cvInstance = getOpenCVInstance();
       
+      if (!cvInstance || !cvInstance.Mat) {
+        console.error('[CV Pipeline] Invalid OpenCV instance');
+        return {
+          success: false,
+          message: 'OpenCV instance invalid'
+        };
+      }
+      
+      console.log('[CV Pipeline] ✅ Got valid OpenCV instance');
       this.cv = cvInstance;
       this.isInitialized = true;
       console.log('[CV Pipeline] ✅ Initialization complete');
@@ -100,7 +117,7 @@ class CVPipeline {
     }
 
     // Check if initialized
-    if (!this.isInitialized || !isOpenCVLoaded()) {
+    if (!this.isInitialized || !this.cv || !isOpenCVReady()) {
       return {
         error: 'CV Pipeline not initialized',
         detected: false
