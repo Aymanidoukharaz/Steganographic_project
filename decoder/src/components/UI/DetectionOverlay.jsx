@@ -217,10 +217,29 @@ export default function DetectionOverlay() {
   }, [state.cornerPositions, state.detectionConfidence, state.showDebugInfo]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full pointer-events-none z-20"
-      style={{ mixBlendMode: 'screen' }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-20"
+        style={{ mixBlendMode: 'screen' }}
+      />
+      
+      {/* Phase 4: Subtitle Display Overlay */}
+      {state.currentSubtitle && (
+        <div className="absolute bottom-0 left-0 right-0 z-30 flex justify-center pb-20 pointer-events-none">
+          <div className="bg-black/90 text-white px-6 py-3 rounded-lg max-w-[90%] text-center shadow-2xl">
+            <p className="text-xl md:text-2xl font-bold leading-tight">
+              {state.currentSubtitle.text}
+            </p>
+            {state.showDebugInfo && (
+              <p className="text-xs text-gray-400 mt-1">
+                {state.currentSubtitle.startTime}ms - {state.currentSubtitle.endTime}ms
+                {state.currentSubtitle.estimated && ' (estimé)'}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

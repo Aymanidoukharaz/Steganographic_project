@@ -13,6 +13,9 @@ import {
   globalCPUMonitor 
 } from './utils/performance-monitor.js';
 
+// Phase 4: Steganographic decoder integration
+import { decodeFrame, isDecoderReady } from '../decoder/decoder-pipeline.js';
+
 /**
  * Helper function to cleanup OpenCV Mats
  */
@@ -248,6 +251,43 @@ class CVPipeline {
         frameData.height
       );
 
+      // Phase 4: Decode steganographic subtitle data
+      let decodedSubtitle = null;
+      let decodingError = null;
+      
+      try {
+        if (isDecoderReady(this.cv)) {
+          console.log('[CV Pipeline] 🔍 Attempting subtitle decode...');
+          
+          // Convert original frame to OpenCV Mat for decoding
+          const fullFrame = this.cv.matFromImageData(
+            this.captureOriginalFrame(videoElement)
+          );
+          
+          // Decode frame using homography matrix
+          const decodeResult = await decodeFrame(
+            this.cv,
+            fullFrame,
+            homographyResult.matrix,
+            scaledPoints
+          );
+          
+          // Cleanup full frame
+          cleanupMats(fullFrame);
+          
+          if (decodeResult.success) {
+            decodedSubtitle = decodeResult.subtitle;
+            console.log('[CV Pipeline] ✅ Subtitle decoded:', decodedSubtitle.text);
+          } else {
+            decodingError = decodeResult.error;
+            console.warn('[CV Pipeline] ⚠️ Decoding failed:', decodingError);
+          }
+        }
+      } catch (decodeError) {
+        console.error('[CV Pipeline] ❌ Decode error:', decodeError);
+        decodingError = decodeError.message;
+      }
+
       // Build successful detection result
       const result = {
         detected: true,
@@ -260,7 +300,10 @@ class CVPipeline {
         validation,
         processingTime: performance.now() - startTime,
         frameData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        // Phase 4: Add decoded subtitle data
+        subtitle: decodedSubtitle,
+        decodingError: decodingError
       };
 
       // Update detection history
@@ -320,6 +363,23 @@ class CVPipeline {
    */
   setTargetFPS(fps) {
     this.frameRateLimiter.setTargetFPS(fps);
+  }
+
+  /**
+   * Capture original frame at full resolution
+   * Used for subtitle decoding (needs full quality)
+   * @param {HTMLVideoElement} videoElement
+   * @returns {ImageData} Full resolution frame
+   */
+  captureOriginalFrame(videoElement) {
+    const canvas = document.createElement('canvas');
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+    
+    return ctx.getImageData(0, 0, canvas.width, canvas.height);
   }
 
   /**

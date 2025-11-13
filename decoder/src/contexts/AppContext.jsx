@@ -30,6 +30,13 @@ const initialState = {
   cvInitialized: false,
   cvLoading: false,
   
+  // Phase 4: Subtitle decoding state
+  currentSubtitle: null,
+  subtitleHistory: [],
+  decodingActive: false,
+  decodingErrors: 0,
+  syncTimestamp: 0,
+  
   // Performance metrics
   processingFPS: 0,
   renderFPS: 0,
@@ -145,6 +152,41 @@ function appReducer(state, action) {
         showDebugInfo: !state.showDebugInfo
       };
       
+    // Phase 4: Subtitle decoding actions
+    case 'SET_CURRENT_SUBTITLE':
+      return {
+        ...state,
+        currentSubtitle: action.payload,
+        decodingActive: action.payload !== null
+      };
+      
+    case 'ADD_SUBTITLE_HISTORY':
+      return {
+        ...state,
+        subtitleHistory: [...state.subtitleHistory, action.payload].slice(-20) // Keep last 20
+      };
+      
+    case 'INCREMENT_DECODING_ERRORS':
+      return {
+        ...state,
+        decodingErrors: state.decodingErrors + 1
+      };
+      
+    case 'SET_SYNC_TIMESTAMP':
+      return {
+        ...state,
+        syncTimestamp: action.payload
+      };
+      
+    case 'RESET_SUBTITLE_STATE':
+      return {
+        ...state,
+        currentSubtitle: null,
+        decodingActive: false,
+        decodingErrors: 0,
+        syncTimestamp: 0
+      };
+      
     default:
       return state;
   }
@@ -170,7 +212,13 @@ export function AppProvider({ children }) {
     setProcessingFPS: (fps) => dispatch({ type: 'SET_PROCESSING_FPS', payload: fps }),
     setRenderFPS: (fps) => dispatch({ type: 'SET_RENDER_FPS', payload: fps }),
     toggleFullscreen: () => dispatch({ type: 'TOGGLE_FULLSCREEN' }),
-    toggleDebugInfo: () => dispatch({ type: 'TOGGLE_DEBUG_INFO' })
+    toggleDebugInfo: () => dispatch({ type: 'TOGGLE_DEBUG_INFO' }),
+    // Phase 4: Subtitle action creators
+    setCurrentSubtitle: (subtitle) => dispatch({ type: 'SET_CURRENT_SUBTITLE', payload: subtitle }),
+    addSubtitleHistory: (subtitle) => dispatch({ type: 'ADD_SUBTITLE_HISTORY', payload: subtitle }),
+    incrementDecodingErrors: () => dispatch({ type: 'INCREMENT_DECODING_ERRORS' }),
+    setSyncTimestamp: (timestamp) => dispatch({ type: 'SET_SYNC_TIMESTAMP', payload: timestamp }),
+    resetSubtitleState: () => dispatch({ type: 'RESET_SUBTITLE_STATE' })
   };
   
   return (

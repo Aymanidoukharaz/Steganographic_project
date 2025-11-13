@@ -22,7 +22,12 @@ export function useCVDetection(videoRef) {
     setCVLoading,
     setCornerPositions,
     setHomography,
-    setDetectionConfidence
+    setDetectionConfidence,
+    // Phase 4: Subtitle state management
+    setCurrentSubtitle,
+    addSubtitleHistory,
+    incrementDecodingErrors,
+    setSyncTimestamp
   } = useApp();
   
   const detectionLoopRef = useRef(null);
@@ -151,6 +156,20 @@ export function useCVDetection(videoRef) {
                 setHomography(result.homography);
                 setDetectionConfidence(result.confidence);
                 setDetectionStatus(DETECTION_STATUS.DETECTING);
+                
+                // Phase 4: Handle decoded subtitle
+                if (result.subtitle) {
+                  console.log('[useCVDetection Sync] 📝 SUBTITLE DECODED:', result.subtitle.text);
+                  setCurrentSubtitle(result.subtitle);
+                  addSubtitleHistory(result.subtitle);
+                  setSyncTimestamp(result.subtitle.timestamp);
+                } else if (result.decodingError) {
+                  // Only log decoding errors occasionally
+                  if (frameCount % 60 === 0) {
+                    console.warn('[useCVDetection Sync] ⚠️ Decoding error:', result.decodingError);
+                  }
+                  incrementDecodingErrors();
+                }
               } else if (result.error && !result.skipped && !result.busy) {
                 // Only log real errors, not skip/busy states
                 if (frameCount % 100 === 0) {

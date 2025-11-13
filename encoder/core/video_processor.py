@@ -1,13 +1,17 @@
 """
 Video processing module for loading, processing, and saving video files.
 Handles MP4, AVI, MOV formats with H.264 output codec.
+Preserves audio using ffmpeg.
 """
 
 import cv2
 import numpy as np
 import os
+import subprocess
 from typing import Tuple, List, Optional, Callable
 import logging
+from pathlib import Path
+import glob
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -195,6 +199,7 @@ class VideoProcessor:
                            progress_callback: Optional[Callable[[float], None]] = None) -> bool:
         """
         Save a list of frames as a video file.
+        Preserves audio from original video using ffmpeg.
         
         Args:
             frames: List of frames to save
@@ -213,7 +218,20 @@ class VideoProcessor:
             first_frame = frames[0]
             frame_height, frame_width = first_frame.shape[:2]
             
-            if not self.setup_video_writer(output_path, (frame_width, frame_height)):
+            # Save to temporary file without audio first
+            # Use unique temp filename to avoid conflicts
+            import time
+            temp_output = output_path.replace('.mp4', f'_temp_no_audio_{int(time.time())}.mp4')
+            
+            # Delete temp file if it already exists
+            if os.path.exists(temp_output):
+                try:
+                    os.remove(temp_output)
+                    logger.info(f"Removed existing temp file: {temp_output}")
+                except Exception as e:
+                    logger.warning(f"Could not remove temp file: {e}")
+            
+            if not self.setup_video_writer(temp_output, (frame_width, frame_height)):
                 return False
             
             # Write all frames
@@ -225,11 +243,49 @@ class VideoProcessor:
                     
                 # Report progress
                 if progress_callback:
-                    progress = 0.7 + (i + 1) / total_frames * 0.3  # 70-100% for saving
+                    progress = 0.7 + (i + 1) / total_frames * 0.25  # 70-95% for saving
                     progress_callback(progress)
             
             self.finalize_video()
-            logger.info(f"Video saved successfully: {output_path}")
+            
+            # Now merge with original audio using ffmpeg
+            logger.info("Merging video with original audio...")
+            
+            # Delete output file if it already exists
+            if os.path.exists(output_path):
+                try:
+                    os.remove(output_path)
+                    logger.info(f"Removed existing output file: {output_path}")
+                except Exception as e:
+                    logger.warning(f"Could not remove existing output: {e}")
+            
+            if self.video_path and self._merge_audio(temp_output, self.video_path, output_path):
+                # Clean up temp file
+                try:
+                    os.remove(temp_output)
+                    logger.info("Cleaned up temporary file")
+                except Exception as e:
+                    logger.warning(f"Could not remove temp file: {e}")
+                logger.info(f"Video saved successfully with audio: {output_path}")
+            else:
+                # If audio merge fails, use video without audio
+                logger.warning("Audio merge failed or no original audio, using video without audio")
+                if os.path.exists(temp_output):
+                    try:
+                        if os.path.exists(output_path):
+                            os.remove(output_path)
+                        os.rename(temp_output, output_path)
+                    except Exception as e:
+                        logger.error(f"Error renaming temp file: {e}")
+                        # Copy instead of rename if rename fails
+                        import shutil
+                        shutil.copy2(temp_output, output_path)
+                        os.remove(temp_output)
+                logger.info(f"Video saved without audio: {output_path}")
+            
+            if progress_callback:
+                progress_callback(1.0)  # 100%
+            
             return True
             
         except Exception as e:
@@ -241,6 +297,125 @@ class VideoProcessor:
         if self.writer:
             self.writer.release()
             self.writer = None
+    
+    def _merge_audio(self, video_no_audio: str, original_video: str, output_with_audio: str) -> bool:
+        """
+        Merge audio from original video with new video using ffmpeg.
+        
+        Args:
+            video_no_audio: Path to video without audio
+            original_video: Path to original video with audio
+            output_with_audio: Path for output video with audio
+            
+        Returns:
+            bool: True if merge successful, False otherwise
+        """
+        try:
+            # Find ffmpeg executable
+            ffmpeg_path = self._find_ffmpeg()
+            if not ffmpeg_path:
+                logger.warning("ffmpeg not found, cannot merge audio")
+                return False
+            
+            logger.info(f"Using ffmpeg: {ffmpeg_path}")
+            
+            # Build ffmpeg command to merge audio from original video
+            # -i input1.mp4 -i input2.mp4 -c copy -map 0:v:0 -map 1:a:0 output.mp4
+            cmd = [
+                ffmpeg_path,
+                '-y',  # Overwrite output file
+                '-i', video_no_audio,  # Input video (no audio)
+                '-i', original_video,   # Input audio source
+                '-c:v', 'copy',         # Copy video codec (no re-encoding)
+                '-c:a', 'aac',          # Use AAC for audio
+                '-map', '0:v:0',        # Map video from first input
+                '-map', '1:a:0?',       # Map audio from second input (? = optional)
+                '-shortest',            # Finish encoding when shortest stream ends
+                output_with_audio
+            ]
+            
+            # Run ffmpeg
+            logger.info(f"Running ffmpeg to merge audio...")
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=300  # 5 minute timeout
+            )
+            
+            if result.returncode == 0:
+                logger.info("✅ Audio merged successfully")
+                return True
+            else:
+                logger.warning(f"ffmpeg failed: {result.stderr.decode('utf-8', errors='ignore')}")
+                return False
+                
+        except FileNotFoundError:
+            logger.warning("ffmpeg executable not found")
+            return False
+        except subprocess.TimeoutExpired:
+            logger.error("ffmpeg timeout - video too long or process hung")
+            return False
+        except Exception as e:
+            logger.error(f"Error merging audio: {str(e)}")
+            return False
+        except subprocess.TimeoutExpired:
+            logger.error("ffmpeg timeout (> 5 minutes)")
+            return False
+        except Exception as e:
+            logger.error(f"Error merging audio: {str(e)}")
+            return False
+    
+    def _find_ffmpeg(self) -> Optional[str]:
+        """
+        Find ffmpeg executable on the system.
+        Checks PATH first, then common Windows installation locations.
+        
+        Returns:
+            str: Path to ffmpeg executable, or None if not found
+        """
+        # First try from PATH
+        try:
+            result = subprocess.run(
+                ['ffmpeg', '-version'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=5
+            )
+            if result.returncode == 0:
+                return 'ffmpeg'  # It's in PATH
+        except:
+            pass
+        
+        # Search in common Windows locations
+        search_paths = [
+            # WinGet installation path
+            os.path.expandvars(r'%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg*\*\bin\ffmpeg.exe'),
+            # Program Files
+            r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
+            r'C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe',
+            # User local
+            os.path.expanduser(r'~\ffmpeg\bin\ffmpeg.exe'),
+        ]
+        
+        for pattern in search_paths:
+            matches = glob.glob(pattern)
+            if matches:
+                ffmpeg_path = matches[0]
+                logger.info(f"Found ffmpeg at: {ffmpeg_path}")
+                return ffmpeg_path
+        
+        logger.warning("ffmpeg not found in PATH or common installation locations")
+        return None
+    
+    def _check_ffmpeg(self) -> bool:
+        """
+        Check if ffmpeg is available.
+        
+        Returns:
+            bool: True if ffmpeg is available, False otherwise
+        """
+        return self._find_ffmpeg() is not None
     
     def cleanup(self):
         """Clean up resources."""
